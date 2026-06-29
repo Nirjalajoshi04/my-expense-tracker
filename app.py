@@ -39,20 +39,37 @@ tab1, tab2, tab3 = st.tabs(["➕ Add Expense", "📋 View Expenses", "📊 Dashb
 with tab1:
     st.header("Add a New Expense")
     
-    # st.form keeps the page from reloading until the user clicks Submit
     with st.form("expense_form", clear_on_submit=True):
         amount = st.number_input("Amount Spent ($)", min_value=0.01, format="%.2f")
-        category = st.selectbox("Category", ["Food", "Rent", "Entertainment", "Utilities", "Shopping", "Other"])
+        
+        # 1. The magic parameter: accept_new_options=True
+        # We also set index=None so it starts blank, showing the placeholder instructions.
+        category = st.selectbox(
+            "Category", 
+            ["Food", "Rent", "Entertainment", "Utilities", "Shopping"],
+            index=None,
+            placeholder="Select from list or type a new one...",
+            accept_new_options=True
+        )
+        
         description = st.text_input("Brief Description")
         
         submitted = st.form_submit_button("Save Expense")
         
         if submitted:
-            date = datetime.now().strftime("%Y-%m-%d")
-            with sqlite3.connect("expenses.db") as conn:
-                conn.execute("INSERT INTO expenses (amount, category, description, date) VALUES (?, ?, ?, ?)", 
-                             (amount, category, description, date))
-            st.success("✅ Expense added successfully!")
+            # 2. Validation: Make sure they didn't submit a blank category
+            if not category:
+                st.error("⚠️ Please select or type a category.")
+            else:
+                date = datetime.now().strftime("%Y-%m-%d")
+                
+                # 3. Clean up the user's input just in case they typed messy spaces
+                clean_category = category.strip().title() 
+                
+                with sqlite3.connect("expenses.db") as conn:
+                    conn.execute("INSERT INTO expenses (amount, category, description, date) VALUES (?, ?, ?, ?)", 
+                                 (amount, clean_category, description, date))
+                st.success(f"✅ Expense added successfully under '{clean_category}'!")
 
 # --- TAB 2: VIEW EXPENSES ---
 with tab2:
